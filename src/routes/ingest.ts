@@ -80,7 +80,7 @@ ingest.post("/window", async (c) => {
   await db.insert(windowMetrics).values({ runId, ...wmRest });
 
   if (scores && scores.length > 0) {
-    const scoreRows = scores.map((s) => ({
+    const scoreRows = scores.map((s: (typeof scores)[number]) => ({
       runId,
       window: wm.window,
       ...s,
