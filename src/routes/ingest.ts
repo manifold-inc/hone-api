@@ -23,10 +23,12 @@ import {
 import { eq, and } from "drizzle-orm";
 import { hotkeyAuth } from "../middleware/auth.js";
 import { rateLimiter } from "../middleware/rate-limit.js";
+import { hotkeyRateLimiter } from "../middleware/hotkey-rate-limit.js";
 
 const ingest = new Hono();
 ingest.use("/*", rateLimiter);
 ingest.use("/*", hotkeyAuth);
+ingest.use("/*", hotkeyRateLimiter);
 
 async function resolveRunId(externalId: string): Promise<number | null> {
   const [row] = await db

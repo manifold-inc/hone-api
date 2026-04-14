@@ -9,6 +9,8 @@ import { stats } from "./routes/stats.js";
 import { handleIngest } from "./ws/ingest.js";
 import { handleDashboard } from "./ws/dashboard.js";
 import { startRetentionJob } from "./lib/retention.js";
+import { startRedisConsumer } from "./lib/redis-consumer.js";
+import { apiKeyAuth } from "./middleware/auth.js";
 
 const app = new Hono();
 
@@ -23,6 +25,7 @@ app.use(
 );
 
 app.route("/ingest", ingest);
+app.use("/api/*", apiKeyAuth);
 app.route("/api/runs", runs);
 app.route("/api/stats", stats);
 
@@ -31,6 +34,9 @@ app.get("/health", (c) => c.json({ status: "ok" }));
 const port = parseInt(process.env.PORT || "3001");
 
 startRetentionJob();
+startRedisConsumer().catch((e) => {
+  console.error("[redis-consumer] Failed to start:", e);
+});
 
 const httpServer = serve({ fetch: app.fetch, port });
 

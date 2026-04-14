@@ -56,8 +56,31 @@ function sendJson(ws: WsSendable, data: unknown) {
   }
 }
 
+const WS_MAX_MESSAGES_PER_SEC = 10;
+
+class TokenBucket {
+  private tokens: number;
+  private lastRefill: number;
+  constructor(private maxTokens: number) {
+    this.tokens = maxTokens;
+    this.lastRefill = Date.now();
+  }
+  consume(): boolean {
+    const now = Date.now();
+    const elapsed = (now - this.lastRefill) / 1000;
+    this.tokens = Math.min(this.maxTokens, this.tokens + elapsed * this.maxTokens);
+    this.lastRefill = now;
+    if (this.tokens >= 1) {
+      this.tokens--;
+      return true;
+    }
+    return false;
+  }
+}
+
 export function handleIngest(ws: WsLike, _req: IncomingMessage) {
   let client: IngestClient | null = null;
+  const bucket = new TokenBucket(WS_MAX_MESSAGES_PER_SEC);
 
   const authTimeout = setTimeout(() => {
     if (!client?.authenticated) {
@@ -69,7 +92,12 @@ export function handleIngest(ws: WsLike, _req: IncomingMessage) {
   ws.on("message", async (raw: unknown) => {
     let msg: Record<string, unknown>;
     try {
-      msg = JSON.parse(String(raw));
+      const rawStr = String(raw);
+      if (rawStr.length > 1_048_576) {
+        sendJson(ws, { error: "Message too large" });
+        return;
+      }
+      msg = JSON.parse(rawStr);
     } catch {
       sendJson(ws, { error: "Invalid JSON" });
       return;
@@ -90,6 +118,11 @@ export function handleIngest(ws: WsLike, _req: IncomingMessage) {
     if (type === "heartbeat") {
       updateHeartbeat(client.hotkey);
       sendJson(ws, { type: "heartbeat-ack" });
+      return;
+    }
+
+    if (!bucket.consume()) {
+      sendJson(ws, { error: "Rate limit exceeded", type });
       return;
     }
 
