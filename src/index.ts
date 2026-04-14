@@ -6,7 +6,9 @@ import { logger } from "hono/logger";
 import { ingest } from "./routes/ingest.js";
 import { runs } from "./routes/runs.js";
 import { stats } from "./routes/stats.js";
-import { stream } from "./routes/stream.js";
+import { handleIngest } from "./ws/ingest.js";
+import { handleDashboard } from "./ws/dashboard.js";
+import { startRetentionJob } from "./lib/retention.js";
 
 const app = new Hono();
 
@@ -23,15 +25,38 @@ app.use(
 app.route("/ingest", ingest);
 app.route("/api/runs", runs);
 app.route("/api/stats", stats);
-app.route("/api/stream", stream);
 
 app.get("/health", (c) => c.json({ status: "ok" }));
-
-import { startRetentionJob } from "./lib/retention.js";
 
 const port = parseInt(process.env.PORT || "3001");
 
 startRetentionJob();
 
-console.log(`hone-api listening on port ${port}`);
-serve({ fetch: app.fetch, port });
+const httpServer = serve({ fetch: app.fetch, port });
+
+async function setupWebSockets() {
+  // Dynamic import to avoid TS errors when types aren't installed yet
+  const { WebSocketServer } = await import("ws");
+  const wss = new WebSocketServer({ noServer: true });
+
+  (httpServer as import("http").Server).on("upgrade", (req, socket, head) => {
+    const url = new URL(req.url!, `http://${req.headers.host}`);
+
+    if (url.pathname === "/ws/ingest") {
+      wss.handleUpgrade(req, socket, head, (ws) => handleIngest(ws, req));
+    } else if (url.pathname === "/ws/dashboard") {
+      wss.handleUpgrade(req, socket, head, (ws) => handleDashboard(ws));
+    } else {
+      socket.destroy();
+    }
+  });
+
+  console.log("[ws] WebSocket upgrade handler registered");
+}
+
+setupWebSockets().catch((e) => {
+  console.error("[ws] Failed to setup WebSocket server:", e);
+  console.log("[ws] Falling back to HTTP-only mode");
+});
+
+console.log(`hone-api listening on port ${port} (HTTP + WebSocket)`);

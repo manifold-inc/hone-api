@@ -2,20 +2,20 @@ import { createMiddleware } from "hono/factory";
 import { createHash } from "crypto";
 
 let cryptoReady = false;
-let sr25519Verify: ((message: Uint8Array, signature: Uint8Array, publicKey: Uint8Array) => boolean) | null = null;
-let decodeAddress: ((address: string) => Uint8Array) | null = null;
+let sr25519VerifyFn: ((message: Uint8Array, signature: Uint8Array, publicKey: Uint8Array) => boolean) | null = null;
+let decodeAddressFn: ((address: string) => Uint8Array) | null = null;
 
 async function ensureCrypto() {
   if (cryptoReady) return;
   const utilCrypto = await import("@polkadot/util-crypto");
   await utilCrypto.cryptoWaitReady();
-  sr25519Verify = utilCrypto.sr25519Verify;
-  decodeAddress = utilCrypto.decodeAddress;
+  sr25519VerifyFn = utilCrypto.sr25519Verify;
+  decodeAddressFn = utilCrypto.decodeAddress;
   cryptoReady = true;
 }
 
 const NONCE_WINDOW_SECONDS = 30;
-const MAX_BODY_BYTES = 1_048_576; // 1MB
+const MAX_BODY_BYTES = 1_048_576;
 
 const nonceCache = new Map<string, number>();
 
@@ -28,14 +28,6 @@ function pruneNonceCache() {
 
 setInterval(pruneNonceCache, 30_000);
 
-/**
- * Bittensor hotkey signature authentication middleware.
- *
- * Verifies sr25519 signatures on ingest requests. Each request must include:
- *   x-hotkey:    SS58 address of the signer
- *   x-nonce:     Unix timestamp (seconds)
- *   x-signature: Hex-encoded sr25519 signature of "{nonce}:{sha256(body)}"
- */
 export const hotkeyAuth = createMiddleware(async (c, next) => {
   const hotkey = c.req.header("x-hotkey");
   const nonce = c.req.header("x-nonce");
@@ -75,11 +67,11 @@ export const hotkeyAuth = createMiddleware(async (c, next) => {
   try {
     await ensureCrypto();
 
-    const publicKey = decodeAddress!(hotkey);
+    const publicKey = decodeAddressFn!(hotkey);
     const sigBytes = Uint8Array.from(Buffer.from(signature, "hex"));
     const msgBytes = new TextEncoder().encode(message);
 
-    const valid = sr25519Verify!(msgBytes, sigBytes, publicKey);
+    const valid = sr25519VerifyFn!(msgBytes, sigBytes, publicKey);
     if (!valid) {
       return c.json({ error: "Invalid signature" }, 401);
     }
@@ -90,15 +82,12 @@ export const hotkeyAuth = createMiddleware(async (c, next) => {
 
   nonceCache.set(nonceKey, Date.now());
 
-  c.set("hotkey", hotkey);
+  // Store verified hotkey for downstream route handlers to read via c.req.header("x-hotkey")
+  // (the header is already present and verified at this point)
 
   await next();
 });
 
-/**
- * Legacy API key auth -- DEPRECATED, kept only for non-ingest admin routes.
- * Not used on ingest endpoints.
- */
 export const apiKeyAuth = createMiddleware(async (c, next) => {
   const apiKey = process.env.API_KEY;
   if (!apiKey) {

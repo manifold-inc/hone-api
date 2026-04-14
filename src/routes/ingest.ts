@@ -58,7 +58,7 @@ ingest.post("/run", async (c) => {
   }
 
   const data = parsed.data;
-  const signerHotkey = c.get("hotkey") as string;
+  const signerHotkey = c.req.header("x-hotkey")!;
 
   if (data.hotkey !== signerHotkey) {
     return c.json({ error: "Hotkey in body does not match signer" }, 403);
@@ -100,7 +100,7 @@ ingest.post("/window", async (c) => {
     return c.json({ error: parsed.error.flatten() }, 400);
   }
 
-  const signerHotkey = c.get("hotkey") as string;
+  const signerHotkey = c.req.header("x-hotkey")!;
   const { windowMetrics: wm, uidScores: scores, gradientStats: gs } = parsed.data;
   const { runId, hotkeyMismatch } = await resolveRunIdAndVerifyHotkey(wm.runId, signerHotkey);
 
@@ -142,7 +142,7 @@ ingest.post("/miner", async (c) => {
     return c.json({ error: parsed.error.flatten() }, 400);
   }
 
-  const signerHotkey = c.get("hotkey") as string;
+  const signerHotkey = c.req.header("x-hotkey")!;
   const { runId, hotkeyMismatch } = await resolveRunIdAndVerifyHotkey(
     parsed.data.runId,
     signerHotkey
@@ -169,7 +169,7 @@ ingest.post("/sync-scores", async (c) => {
     return c.json({ error: parsed.error.flatten() }, 400);
   }
 
-  const signerHotkey = c.get("hotkey") as string;
+  const signerHotkey = c.req.header("x-hotkey")!;
   const { runId, hotkeyMismatch } = await resolveRunIdAndVerifyHotkey(
     parsed.data.runId,
     signerHotkey
@@ -198,7 +198,7 @@ ingest.post("/slash", async (c) => {
     return c.json({ error: parsed.error.flatten() }, 400);
   }
 
-  const signerHotkey = c.get("hotkey") as string;
+  const signerHotkey = c.req.header("x-hotkey")!;
   const { runId, hotkeyMismatch } = await resolveRunIdAndVerifyHotkey(
     parsed.data.runId,
     signerHotkey
@@ -220,7 +220,7 @@ ingest.post("/inactivity", async (c) => {
     return c.json({ error: parsed.error.flatten() }, 400);
   }
 
-  const signerHotkey = c.get("hotkey") as string;
+  const signerHotkey = c.req.header("x-hotkey")!;
   const { runId, hotkeyMismatch } = await resolveRunIdAndVerifyHotkey(
     parsed.data.runId,
     signerHotkey
