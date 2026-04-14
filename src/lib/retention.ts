@@ -7,6 +7,7 @@ import {
   syncScores,
   slashEvents,
   inactivityEvents,
+  innerSteps,
 } from "../db/schema.js";
 import { sql, lte } from "drizzle-orm";
 
@@ -26,6 +27,7 @@ export async function cleanupOldMetrics(retentionDays = DEFAULT_RETENTION_DAYS) 
     { name: "sync_scores", table: syncScores, col: syncScores.createdAt },
     { name: "slash_events", table: slashEvents, col: slashEvents.createdAt },
     { name: "inactivity_events", table: inactivityEvents, col: inactivityEvents.createdAt },
+    { name: "inner_steps", table: innerSteps, col: innerSteps.createdAt },
   ];
 
   for (const { name, table, col } of tables) {

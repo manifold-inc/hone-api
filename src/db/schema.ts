@@ -238,3 +238,26 @@ export const inactivityEvents = mysqlTable(
     index("idx_inact_run_uid").on(table.runId, table.uid),
   ]
 );
+
+export const innerSteps = mysqlTable(
+  "inner_steps",
+  {
+    id: bigint("id", { mode: "number" }).primaryKey().autoincrement(),
+    runId: bigint("run_id", { mode: "number" }).notNull(),
+    window: int("window").notNull(),
+    innerStep: int("inner_step").notNull(),
+    globalStep: int("global_step").notNull(),
+
+    loss: float("loss"),
+    batchSize: int("batch_size"),
+    batchTokens: int("batch_tokens"),
+    innerLr: float("inner_lr"),
+    gradNorm: float("grad_norm"),
+
+    createdAt: timestamp("created_at").defaultNow().notNull(),
+  },
+  (table) => [
+    index("idx_is_run_window").on(table.runId, table.window),
+    index("idx_is_run_created").on(table.runId, table.createdAt),
+  ]
+);

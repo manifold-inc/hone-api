@@ -11,6 +11,7 @@ import {
   syncScores,
   slashEvents,
   inactivityEvents,
+  innerSteps,
 } from "../db/schema.js";
 import { eq } from "drizzle-orm";
 
@@ -95,4 +96,12 @@ export async function persistInactivity(
 ) {
   const { runId: _rid, ...rest } = data;
   await db.insert(inactivityEvents).values({ runId, ...rest } as never);
+}
+
+export async function persistInnerStep(
+  runId: number,
+  data: Record<string, unknown>
+) {
+  const { runId: _rid, ...rest } = data;
+  await db.insert(innerSteps).values({ runId, ...rest } as never);
 }

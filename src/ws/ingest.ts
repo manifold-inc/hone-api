@@ -14,6 +14,7 @@ import {
   persistSyncScores,
   persistSlash,
   persistInactivity,
+  persistInnerStep,
 } from "../lib/persist.js";
 import {
   ingestWindowSchema,
@@ -21,6 +22,7 @@ import {
   syncScoresSchema,
   slashEventSchema,
   inactivityEventSchema,
+  innerStepSchema,
 } from "../lib/validators.js";
 import { db } from "../db/index.js";
 import { trainingRuns } from "../db/schema.js";
@@ -240,6 +242,13 @@ async function handleMetric(
       await persistInactivity(client.runId, parsed as unknown as Record<string, unknown>);
       broadcastToDashboard("metric", { type: "inactivity", runId: client.runId, data: parsed });
       sendJson(client.ws, { type: "ack", for: "inactivity" });
+      break;
+    }
+    case "inner-step": {
+      const parsed = innerStepSchema.parse(data);
+      if (parsed.runId !== client.externalRunId) throw new Error("runId mismatch");
+      await persistInnerStep(client.runId, parsed as unknown as Record<string, unknown>);
+      broadcastToDashboard("metric", { type: "inner-step", runId: client.runId, data: parsed });
       break;
     }
     default:

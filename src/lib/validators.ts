@@ -129,3 +129,15 @@ export const inactivityEventSchema = z.object({
   scoreBefore: z.number(),
   scoreAfter: z.number(),
 });
+
+export const innerStepSchema = z.object({
+  runId: z.string(),
+  window: z.number().int(),
+  innerStep: z.number().int(),
+  globalStep: z.number().int(),
+  loss: z.number().optional(),
+  batchSize: z.number().int().optional(),
+  batchTokens: z.number().int().optional(),
+  innerLr: z.number().optional(),
+  gradNorm: z.number().optional(),
+});
