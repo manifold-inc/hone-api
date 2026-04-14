@@ -1,21 +1,21 @@
 import { z } from "zod";
 
 const finiteNumber = () => z.number().finite();
-const finiteOptional = () => z.number().finite().optional();
-const lossField = () => z.number().finite().min(-100).max(100).optional();
-const scoreField = () => z.number().finite().min(-100).max(100).optional();
-const rateField = () => z.number().finite().min(0).max(100).optional();
-const normField = () => z.number().finite().min(0).optional();
-const lrField = () => z.number().finite().min(0).max(10).optional();
+const finiteNullish = () => z.number().finite().nullish();
+const lossField = () => z.number().finite().min(-100).max(100).nullish();
+const scoreField = () => z.number().finite().min(-100).max(100).nullish();
+const rateField = () => z.number().finite().min(0).max(100).nullish();
+const normField = () => z.number().finite().min(0).nullish();
+const lrField = () => z.number().finite().min(0).max(10).nullish();
 
 export const registerRunSchema = z.object({
   id: z.string().uuid(),
   hotkey: z.string().min(1).max(256),
   role: z.enum(["validator", "miner"]),
   netuid: finiteNumber().int(),
-  uid: finiteNumber().int().optional(),
-  version: z.string().max(64).optional(),
-  config: z.record(z.unknown()).optional(),
+  uid: finiteNumber().int().nullish(),
+  version: z.string().max(64).nullish(),
+  config: z.record(z.unknown()).nullish(),
 });
 
 const uidScoreSchema = z.object({
@@ -24,9 +24,9 @@ const uidScoreSchema = z.object({
   binaryIndicator: scoreField(),
   binaryMovingAvg: scoreField(),
   syncScore: scoreField(),
-  openskillMu: finiteOptional(),
-  openskillSigma: finiteOptional(),
-  openskillOrdinal: finiteOptional(),
+  openskillMu: finiteNullish(),
+  openskillSigma: finiteNullish(),
+  openskillOrdinal: finiteNullish(),
   finalScore: scoreField(),
   weight: scoreField(),
 });
@@ -35,37 +35,37 @@ const windowMetricsSchema = z.object({
   runId: z.string().uuid(),
   window: finiteNumber().int().min(0),
   globalStep: finiteNumber().int().min(0),
-  block: finiteNumber().int().min(0).optional(),
+  block: finiteNumber().int().min(0).nullish(),
   lossOwnBefore: lossField(),
   lossOwnAfter: lossField(),
   lossRandomBefore: lossField(),
   lossRandomAfter: lossField(),
-  lossOwnImprovement: finiteOptional(),
-  lossRandomImprovement: finiteOptional(),
+  lossOwnImprovement: finiteNullish(),
+  lossRandomImprovement: finiteNullish(),
   outerLr: lrField(),
   innerLr: lrField(),
-  activeMiners: finiteNumber().int().min(0).optional(),
+  activeMiners: finiteNumber().int().min(0).nullish(),
   gatherSuccessRate: rateField(),
-  gatherPeers: finiteNumber().int().min(0).optional(),
+  gatherPeers: finiteNumber().int().min(0).nullish(),
   positivePeersRatio: rateField(),
-  reserveUsed: finiteNumber().int().min(0).optional(),
-  overlapMean: finiteOptional(),
-  overlapMax: finiteOptional(),
-  overlapPairsChecked: finiteNumber().int().min(0).optional(),
-  overlapPairsOverThreshold: finiteNumber().int().min(0).optional(),
-  overlapRatioOverThreshold: finiteOptional(),
+  reserveUsed: finiteNumber().int().min(0).nullish(),
+  overlapMean: finiteNullish(),
+  overlapMax: finiteNullish(),
+  overlapPairsChecked: finiteNumber().int().min(0).nullish(),
+  overlapPairsOverThreshold: finiteNumber().int().min(0).nullish(),
+  overlapRatioOverThreshold: finiteNullish(),
   compressMinMedianNorm: normField(),
   compressMaxMedianNorm: normField(),
-  gatherIntendedMeanFinal: finiteOptional(),
-  gatherActualMeanFinal: finiteOptional(),
-  timingWindowTotal: finiteOptional(),
-  timingPeerUpdate: finiteOptional(),
-  timingGather: finiteOptional(),
-  timingEvaluation: finiteOptional(),
-  timingModelUpdate: finiteOptional(),
-  evaluatedUids: finiteNumber().int().min(0).optional(),
-  totalNegativeEvals: finiteNumber().int().min(0).optional(),
-  totalExcluded: finiteNumber().int().min(0).optional(),
+  gatherIntendedMeanFinal: finiteNullish(),
+  gatherActualMeanFinal: finiteNullish(),
+  timingWindowTotal: finiteNullish(),
+  timingPeerUpdate: finiteNullish(),
+  timingGather: finiteNullish(),
+  timingEvaluation: finiteNullish(),
+  timingModelUpdate: finiteNullish(),
+  evaluatedUids: finiteNumber().int().min(0).nullish(),
+  totalNegativeEvals: finiteNumber().int().min(0).nullish(),
+  totalExcluded: finiteNumber().int().min(0).nullish(),
 });
 
 const gradientStatsSchema = z.object({
@@ -75,13 +75,13 @@ const gradientStatsSchema = z.object({
   medianGradNorm: normField(),
   gradNormStd: normField(),
   meanWeightNorm: normField(),
-  gradToWeightRatio: finiteOptional(),
+  gradToWeightRatio: finiteNullish(),
 });
 
 export const ingestWindowSchema = z.object({
   windowMetrics: windowMetricsSchema,
-  uidScores: z.array(uidScoreSchema).max(512).optional(),
-  gradientStats: gradientStatsSchema.optional(),
+  uidScores: z.array(uidScoreSchema).max(512).nullish(),
+  gradientStats: gradientStatsSchema.nullish(),
 });
 
 export const minerMetricsSchema = z.object({
@@ -90,19 +90,19 @@ export const minerMetricsSchema = z.object({
   globalStep: finiteNumber().int().min(0),
   loss: lossField(),
   windowEntryLoss: lossField(),
-  tokensPerSec: finiteOptional(),
-  batchTokens: finiteNumber().int().min(0).optional(),
+  tokensPerSec: finiteNullish(),
+  batchTokens: finiteNumber().int().min(0).nullish(),
   gradNorm: normField(),
   weightNorm: normField(),
   momentumNorm: normField(),
   gatherSuccessRate: rateField(),
-  gatherPeers: finiteNumber().int().min(0).optional(),
-  gpuMemoryAllocated: finiteOptional(),
-  gpuMemoryCached: finiteOptional(),
+  gatherPeers: finiteNumber().int().min(0).nullish(),
+  gpuMemoryAllocated: finiteNullish(),
+  gpuMemoryCached: finiteNullish(),
   innerLr: lrField(),
-  timing: z.record(z.number().finite()).optional(),
+  timing: z.record(z.number().finite()).nullish(),
   gradientL2Norm: normField(),
-  gradientTotalElements: finiteNumber().int().min(0).optional(),
+  gradientTotalElements: finiteNumber().int().min(0).nullish(),
   cpuUsage: rateField(),
   gpuUtilization: rateField(),
 });
@@ -110,9 +110,9 @@ export const minerMetricsSchema = z.object({
 const syncScoreItemSchema = z.object({
   uid: finiteNumber().int().min(0).max(65535),
   l2Norm: normField(),
-  avgAbsDiff: finiteOptional(),
-  avgStepsBehind: finiteOptional(),
-  maxStepsBehind: finiteNumber().int().min(0).optional(),
+  avgAbsDiff: finiteNullish(),
+  avgStepsBehind: finiteNullish(),
+  maxStepsBehind: finiteNumber().int().min(0).nullish(),
 });
 
 export const syncScoresSchema = z.object({
@@ -144,8 +144,8 @@ export const innerStepSchema = z.object({
   innerStep: finiteNumber().int().min(0),
   globalStep: finiteNumber().int().min(0),
   loss: lossField(),
-  batchSize: finiteNumber().int().min(0).optional(),
-  batchTokens: finiteNumber().int().min(0).optional(),
+  batchSize: finiteNumber().int().min(0).nullish(),
+  batchTokens: finiteNumber().int().min(0).nullish(),
   innerLr: lrField(),
   gradNorm: normField(),
 });
