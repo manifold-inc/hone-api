@@ -6,8 +6,11 @@ import {
   uidScores,
   minerMetrics,
   gradientStats,
+  syncScores,
+  slashEvents,
+  inactivityEvents,
 } from "../db/schema.js";
-import { eq, desc, and, gte, lte, sql, or } from "drizzle-orm";
+import { eq, desc, and, gte, lte, sql } from "drizzle-orm";
 
 const runs = new Hono();
 
@@ -172,6 +175,75 @@ runs.get("/:id/gradients", async (c) => {
     .offset(offset);
 
   return c.json({ gradients: rows });
+});
+
+runs.get("/:id/sync-scores", async (c) => {
+  const rawId = c.req.param("id");
+  const runId = await resolveId(rawId);
+  if (runId === null) return c.json({ error: "Run not found" }, 404);
+
+  const uid = c.req.query("uid");
+  const limit = Math.min(parseInt(c.req.query("limit") || "500"), 5000);
+  const offset = parseInt(c.req.query("offset") || "0");
+
+  const conditions = [eq(syncScores.runId, runId)];
+  if (uid) conditions.push(eq(syncScores.uid, parseInt(uid)));
+
+  const rows = await db
+    .select()
+    .from(syncScores)
+    .where(and(...conditions))
+    .orderBy(desc(syncScores.window))
+    .limit(limit)
+    .offset(offset);
+
+  return c.json({ syncScores: rows });
+});
+
+runs.get("/:id/slashes", async (c) => {
+  const rawId = c.req.param("id");
+  const runId = await resolveId(rawId);
+  if (runId === null) return c.json({ error: "Run not found" }, 404);
+
+  const uid = c.req.query("uid");
+  const limit = Math.min(parseInt(c.req.query("limit") || "100"), 1000);
+  const offset = parseInt(c.req.query("offset") || "0");
+
+  const conditions = [eq(slashEvents.runId, runId)];
+  if (uid) conditions.push(eq(slashEvents.uid, parseInt(uid)));
+
+  const rows = await db
+    .select()
+    .from(slashEvents)
+    .where(and(...conditions))
+    .orderBy(desc(slashEvents.window))
+    .limit(limit)
+    .offset(offset);
+
+  return c.json({ slashes: rows });
+});
+
+runs.get("/:id/inactivity", async (c) => {
+  const rawId = c.req.param("id");
+  const runId = await resolveId(rawId);
+  if (runId === null) return c.json({ error: "Run not found" }, 404);
+
+  const uid = c.req.query("uid");
+  const limit = Math.min(parseInt(c.req.query("limit") || "100"), 1000);
+  const offset = parseInt(c.req.query("offset") || "0");
+
+  const conditions = [eq(inactivityEvents.runId, runId)];
+  if (uid) conditions.push(eq(inactivityEvents.uid, parseInt(uid)));
+
+  const rows = await db
+    .select()
+    .from(inactivityEvents)
+    .where(and(...conditions))
+    .orderBy(desc(inactivityEvents.window))
+    .limit(limit)
+    .offset(offset);
+
+  return c.json({ inactivity: rows });
 });
 
 export { runs };

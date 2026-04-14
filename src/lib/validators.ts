@@ -44,6 +44,12 @@ const windowMetricsSchema = z.object({
   overlapMean: z.number().optional(),
   overlapMax: z.number().optional(),
   overlapPairsChecked: z.number().int().optional(),
+  overlapPairsOverThreshold: z.number().int().optional(),
+  overlapRatioOverThreshold: z.number().optional(),
+  compressMinMedianNorm: z.number().optional(),
+  compressMaxMedianNorm: z.number().optional(),
+  gatherIntendedMeanFinal: z.number().optional(),
+  gatherActualMeanFinal: z.number().optional(),
   timingWindowTotal: z.number().optional(),
   timingPeerUpdate: z.number().optional(),
   timingGather: z.number().optional(),
@@ -87,4 +93,39 @@ export const minerMetricsSchema = z.object({
   gpuMemoryCached: z.number().optional(),
   innerLr: z.number().optional(),
   timing: z.any().optional(),
+  gradientL2Norm: z.number().optional(),
+  gradientTotalElements: z.number().int().optional(),
+  cpuUsage: z.number().optional(),
+  gpuUtilization: z.number().optional(),
+});
+
+const syncScoreItemSchema = z.object({
+  uid: z.number().int(),
+  l2Norm: z.number().optional(),
+  avgAbsDiff: z.number().optional(),
+  avgStepsBehind: z.number().optional(),
+  maxStepsBehind: z.number().int().optional(),
+});
+
+export const syncScoresSchema = z.object({
+  runId: z.string(),
+  window: z.number().int(),
+  scores: z.array(syncScoreItemSchema),
+});
+
+export const slashEventSchema = z.object({
+  runId: z.string(),
+  window: z.number().int(),
+  uid: z.number().int(),
+  scoreBefore: z.number(),
+  scoreAfter: z.number(),
+  reason: z.string().max(256),
+});
+
+export const inactivityEventSchema = z.object({
+  runId: z.string(),
+  window: z.number().int(),
+  uid: z.number().int(),
+  scoreBefore: z.number(),
+  scoreAfter: z.number(),
 });

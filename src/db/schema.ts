@@ -3,9 +3,9 @@ import {
   varchar,
   int,
   float,
-  double,
   json,
   timestamp,
+  text,
   index,
   uniqueIndex,
   bigint,
@@ -62,6 +62,14 @@ export const windowMetrics = mysqlTable(
     overlapMean: float("overlap_mean"),
     overlapMax: float("overlap_max"),
     overlapPairsChecked: int("overlap_pairs_checked"),
+    overlapPairsOverThreshold: int("overlap_pairs_over_threshold"),
+    overlapRatioOverThreshold: float("overlap_ratio_over_threshold"),
+
+    compressMinMedianNorm: float("compress_min_median_norm"),
+    compressMaxMedianNorm: float("compress_max_median_norm"),
+
+    gatherIntendedMeanFinal: float("gather_intended_mean_final"),
+    gatherActualMeanFinal: float("gather_actual_mean_final"),
 
     timingWindowTotal: float("timing_window_total"),
     timingPeerUpdate: float("timing_peer_update"),
@@ -136,6 +144,11 @@ export const minerMetrics = mysqlTable(
 
     timing: json("timing"),
 
+    gradientL2Norm: float("gradient_l2_norm"),
+    gradientTotalElements: bigint("gradient_total_elements", { mode: "number" }),
+    cpuUsage: float("cpu_usage"),
+    gpuUtilization: float("gpu_utilization"),
+
     createdAt: timestamp("created_at").defaultNow().notNull(),
   },
   (table) => [
@@ -163,5 +176,65 @@ export const gradientStats = mysqlTable(
   },
   (table) => [
     uniqueIndex("idx_gs_run_window").on(table.runId, table.window),
+  ]
+);
+
+export const syncScores = mysqlTable(
+  "sync_scores",
+  {
+    id: bigint("id", { mode: "number" }).primaryKey().autoincrement(),
+    runId: bigint("run_id", { mode: "number" }).notNull(),
+    window: int("window").notNull(),
+    uid: int("uid").notNull(),
+
+    l2Norm: float("l2_norm"),
+    avgAbsDiff: float("avg_abs_diff"),
+    avgStepsBehind: float("avg_steps_behind"),
+    maxStepsBehind: int("max_steps_behind"),
+
+    createdAt: timestamp("created_at").defaultNow().notNull(),
+  },
+  (table) => [
+    index("idx_ss_run_window").on(table.runId, table.window),
+    index("idx_ss_run_uid").on(table.runId, table.uid),
+  ]
+);
+
+export const slashEvents = mysqlTable(
+  "slash_events",
+  {
+    id: bigint("id", { mode: "number" }).primaryKey().autoincrement(),
+    runId: bigint("run_id", { mode: "number" }).notNull(),
+    window: int("window").notNull(),
+    uid: int("uid").notNull(),
+
+    scoreBefore: float("score_before"),
+    scoreAfter: float("score_after"),
+    reason: varchar("reason", { length: 256 }),
+
+    createdAt: timestamp("created_at").defaultNow().notNull(),
+  },
+  (table) => [
+    index("idx_slash_run_window").on(table.runId, table.window),
+    index("idx_slash_run_uid").on(table.runId, table.uid),
+  ]
+);
+
+export const inactivityEvents = mysqlTable(
+  "inactivity_events",
+  {
+    id: bigint("id", { mode: "number" }).primaryKey().autoincrement(),
+    runId: bigint("run_id", { mode: "number" }).notNull(),
+    window: int("window").notNull(),
+    uid: int("uid").notNull(),
+
+    scoreBefore: float("score_before"),
+    scoreAfter: float("score_after"),
+
+    createdAt: timestamp("created_at").defaultNow().notNull(),
+  },
+  (table) => [
+    index("idx_inact_run_window").on(table.runId, table.window),
+    index("idx_inact_run_uid").on(table.runId, table.uid),
   ]
 );
