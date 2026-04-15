@@ -19,6 +19,7 @@ import {
   slashEventSchema,
   inactivityEventSchema,
   innerStepSchema,
+  gatherStatusSchema,
 } from "../lib/validators.js";
 import { eq, and } from "drizzle-orm";
 import { hotkeyAuth } from "../middleware/auth.js";
@@ -257,6 +258,33 @@ ingest.post("/inner-step", async (c) => {
 
   const { runId: _rid, ...rest } = parsed.data;
   await db.insert(innerSteps).values({ runId, ...rest });
+
+  return c.json({ status: "ok" }, 201);
+});
+
+ingest.post("/gather-status", async (c) => {
+  const body = await c.req.json();
+  const parsed = gatherStatusSchema.safeParse(body);
+  if (!parsed.success) {
+    return c.json({ error: parsed.error.flatten() }, 400);
+  }
+
+  const signerHotkey = c.req.header("x-hotkey")!;
+  const { runId, hotkeyMismatch } = await resolveRunIdAndVerifyHotkey(
+    parsed.data.runId,
+    signerHotkey
+  );
+
+  if (runId === null) return c.json({ error: "Run not found" }, 404);
+  if (hotkeyMismatch) return c.json({ error: "Run belongs to a different hotkey" }, 403);
+
+  await db
+    .update(trainingRuns)
+    .set({ lastSeenAt: new Date() })
+    .where(eq(trainingRuns.id, runId));
+
+  const { persistGatherStatus } = await import("../lib/persist.js");
+  await persistGatherStatus(runId, parsed.data.window, parsed.data.results as unknown as Array<Record<string, unknown>>);
 
   return c.json({ status: "ok" }, 201);
 });

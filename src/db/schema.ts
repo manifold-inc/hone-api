@@ -109,6 +109,19 @@ export const uidScores = mysqlTable(
     finalScore: float("final_score"),
     weight: float("weight"),
 
+    lossOwnBefore: float("loss_own_before"),
+    lossOwnAfter: float("loss_own_after"),
+    lossRandomBefore: float("loss_random_before"),
+    lossRandomAfter: float("loss_random_after"),
+    improvementOwn: float("improvement_own"),
+    improvementRandom: float("improvement_random"),
+
+    evalStatus: varchar("eval_status", { length: 16 }),
+    evalSkipReason: varchar("eval_skip_reason", { length: 256 }),
+    consecutiveNegatives: int("consecutive_negatives"),
+    negativeFrequency: float("negative_frequency"),
+    bmaThresholdApplied: boolean("bma_threshold_applied"),
+
     createdAt: timestamp("created_at").defaultNow().notNull(),
   },
   (table) => [
@@ -148,6 +161,14 @@ export const minerMetrics = mysqlTable(
     gradientTotalElements: bigint("gradient_total_elements", { mode: "number" }),
     cpuUsage: float("cpu_usage"),
     gpuUtilization: float("gpu_utilization"),
+
+    outerStepApplied: boolean("outer_step_applied"),
+    compressedSizeMb: float("compressed_size_mb"),
+    uploadSizeMb: float("upload_size_mb"),
+    offloadTime: float("offload_time"),
+    restoreTime: float("restore_time"),
+    skippedPeers: int("skipped_peers"),
+    gatherPeerList: json("gather_peer_list"),
 
     createdAt: timestamp("created_at").defaultNow().notNull(),
   },
@@ -259,5 +280,24 @@ export const innerSteps = mysqlTable(
   (table) => [
     index("idx_is_run_window").on(table.runId, table.window),
     index("idx_is_run_created").on(table.runId, table.createdAt),
+  ]
+);
+
+export const gatherStatus = mysqlTable(
+  "gather_status",
+  {
+    id: bigint("id", { mode: "number" }).primaryKey().autoincrement(),
+    runId: bigint("run_id", { mode: "number" }).notNull(),
+    window: int("window").notNull(),
+    uid: int("uid").notNull(),
+
+    status: varchar("status", { length: 16 }).notNull(),
+    reason: varchar("reason", { length: 256 }),
+
+    createdAt: timestamp("created_at").defaultNow().notNull(),
+  },
+  (table) => [
+    index("idx_gs_run_window").on(table.runId, table.window),
+    index("idx_gs_run_uid").on(table.runId, table.uid),
   ]
 );

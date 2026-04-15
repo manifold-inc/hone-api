@@ -16,6 +16,7 @@ import {
   persistSlash,
   persistInactivity,
   persistInnerStep,
+  persistGatherStatus,
 } from "./persist.js";
 import {
   ingestWindowSchema,
@@ -24,6 +25,7 @@ import {
   slashEventSchema,
   inactivityEventSchema,
   innerStepSchema,
+  gatherStatusSchema,
 } from "./validators.js";
 import { broadcastToDashboard } from "./ws-hub.js";
 import { createHash } from "crypto";
@@ -137,6 +139,12 @@ async function processMessage(msg: StreamMessage): Promise<void> {
       const parsed = innerStepSchema.parse(data);
       await persistInnerStep(dbRunId, parsed as unknown as Record<string, unknown>);
       broadcastToDashboard("metric", { type: "inner-step", runId: dbRunId, data: parsed });
+      break;
+    }
+    case "gather-status": {
+      const parsed = gatherStatusSchema.parse(data);
+      await persistGatherStatus(dbRunId, parsed.window, parsed.results as unknown as Array<Record<string, unknown>>);
+      broadcastToDashboard("metric", { type: "gather-status", runId: dbRunId, data: parsed });
       break;
     }
     default:

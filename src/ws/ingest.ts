@@ -15,6 +15,7 @@ import {
   persistSlash,
   persistInactivity,
   persistInnerStep,
+  persistGatherStatus,
 } from "../lib/persist.js";
 import {
   ingestWindowSchema,
@@ -23,6 +24,7 @@ import {
   slashEventSchema,
   inactivityEventSchema,
   innerStepSchema,
+  gatherStatusSchema,
 } from "../lib/validators.js";
 import { db } from "../db/index.js";
 import { trainingRuns } from "../db/schema.js";
@@ -282,6 +284,14 @@ async function handleMetric(
       if (parsed.runId !== client.externalRunId) throw new Error("runId mismatch");
       await persistInnerStep(client.runId, parsed as unknown as Record<string, unknown>);
       broadcastToDashboard("metric", { type: "inner-step", runId: client.runId, data: parsed });
+      break;
+    }
+    case "gather-status": {
+      const parsed = gatherStatusSchema.parse(data);
+      if (parsed.runId !== client.externalRunId) throw new Error("runId mismatch");
+      await persistGatherStatus(client.runId, parsed.window, parsed.results as unknown as Array<Record<string, unknown>>);
+      broadcastToDashboard("metric", { type: "gather-status", runId: client.runId, data: parsed });
+      sendJson(client.ws, { type: "ack", for: "gather-status" });
       break;
     }
     default:

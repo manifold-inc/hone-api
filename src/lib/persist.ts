@@ -12,6 +12,7 @@ import {
   slashEvents,
   inactivityEvents,
   innerSteps,
+  gatherStatus,
 } from "../db/schema.js";
 import { eq } from "drizzle-orm";
 
@@ -104,4 +105,14 @@ export async function persistInnerStep(
 ) {
   const { runId: _rid, ...rest } = data;
   await db.insert(innerSteps).values({ runId, ...rest } as never);
+}
+
+export async function persistGatherStatus(
+  runId: number,
+  window: number,
+  results: Array<Record<string, unknown>>
+) {
+  if (results.length === 0) return;
+  const rows = results.map((r) => ({ runId, window, ...r }));
+  await db.insert(gatherStatus).values(rows as never);
 }

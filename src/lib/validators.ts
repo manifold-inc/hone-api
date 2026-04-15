@@ -29,6 +29,17 @@ const uidScoreSchema = z.object({
   openskillOrdinal: finiteNullish(),
   finalScore: scoreField(),
   weight: scoreField(),
+  lossOwnBefore: lossField(),
+  lossOwnAfter: lossField(),
+  lossRandomBefore: lossField(),
+  lossRandomAfter: lossField(),
+  improvementOwn: finiteNullish(),
+  improvementRandom: finiteNullish(),
+  evalStatus: z.enum(["evaluated", "skipped", "invalid", "excluded"]).nullish(),
+  evalSkipReason: z.string().max(256).nullish(),
+  consecutiveNegatives: finiteNumber().int().min(0).nullish(),
+  negativeFrequency: rateField(),
+  bmaThresholdApplied: z.boolean().nullish(),
 });
 
 const windowMetricsSchema = z.object({
@@ -105,6 +116,13 @@ export const minerMetricsSchema = z.object({
   gradientTotalElements: finiteNumber().int().min(0).nullish(),
   cpuUsage: rateField(),
   gpuUtilization: rateField(),
+  outerStepApplied: z.boolean().nullish(),
+  compressedSizeMb: finiteNullish(),
+  uploadSizeMb: finiteNullish(),
+  offloadTime: finiteNullish(),
+  restoreTime: finiteNullish(),
+  skippedPeers: finiteNumber().int().min(0).nullish(),
+  gatherPeerList: z.array(finiteNumber().int().min(0).max(65535)).max(512).nullish(),
 });
 
 const syncScoreItemSchema = z.object({
@@ -136,6 +154,18 @@ export const inactivityEventSchema = z.object({
   uid: finiteNumber().int().min(0).max(65535),
   scoreBefore: finiteNumber(),
   scoreAfter: finiteNumber(),
+});
+
+const gatherStatusItemSchema = z.object({
+  uid: finiteNumber().int().min(0).max(65535),
+  status: z.enum(["success", "skipped", "timeout", "failed", "excluded"]),
+  reason: z.string().max(256).nullish(),
+});
+
+export const gatherStatusSchema = z.object({
+  runId: z.string().uuid(),
+  window: finiteNumber().int().min(0),
+  results: z.array(gatherStatusItemSchema).max(512),
 });
 
 export const innerStepSchema = z.object({

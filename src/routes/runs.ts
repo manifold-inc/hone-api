@@ -10,6 +10,7 @@ import {
   slashEvents,
   inactivityEvents,
   innerSteps,
+  gatherStatus,
 } from "../db/schema.js";
 import { eq, desc, and, gte, lte, sql } from "drizzle-orm";
 
@@ -268,6 +269,29 @@ runs.get("/:id/inner-steps", async (c) => {
     .offset(offset);
 
   return c.json({ innerSteps: rows });
+});
+
+runs.get("/:id/gather-status", async (c) => {
+  const rawId = c.req.param("id");
+  const runId = await resolveId(rawId);
+  if (runId === null) return c.json({ error: "Run not found" }, 404);
+
+  const window = c.req.query("window");
+  const limit = Math.min(parseInt(c.req.query("limit") || "1000"), 5000);
+  const offset = parseInt(c.req.query("offset") || "0");
+
+  const conditions = [eq(gatherStatus.runId, runId)];
+  if (window) conditions.push(eq(gatherStatus.window, parseInt(window)));
+
+  const rows = await db
+    .select()
+    .from(gatherStatus)
+    .where(and(...conditions))
+    .orderBy(desc(gatherStatus.id))
+    .limit(limit)
+    .offset(offset);
+
+  return c.json({ gatherStatus: rows });
 });
 
 export { runs };
