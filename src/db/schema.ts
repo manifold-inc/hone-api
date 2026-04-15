@@ -9,6 +9,7 @@ import {
   index,
   uniqueIndex,
   bigint,
+  boolean,
   mysqlEnum,
 } from "drizzle-orm/mysql-core";
 
@@ -22,6 +23,8 @@ export const trainingRuns = mysqlTable(
     netuid: int("netuid").notNull(),
     uid: int("uid"),
     version: varchar("version", { length: 32 }),
+    project: varchar("project", { length: 64 }),
+    modelSize: varchar("model_size", { length: 32 }),
     config: json("config"),
     startedAt: timestamp("started_at").defaultNow().notNull(),
     lastSeenAt: timestamp("last_seen_at").defaultNow().notNull(),
@@ -31,6 +34,7 @@ export const trainingRuns = mysqlTable(
     index("idx_runs_hotkey").on(table.hotkey),
     index("idx_runs_role_last_seen").on(table.role, table.lastSeenAt),
     index("idx_runs_last_seen").on(table.lastSeenAt),
+    index("idx_runs_project_version").on(table.project, table.version),
   ]
 );
 

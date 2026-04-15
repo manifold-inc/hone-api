@@ -15,6 +15,8 @@ export const registerRunSchema = z.object({
   netuid: finiteNumber().int(),
   uid: finiteNumber().int().nullish(),
   version: z.string().max(64).nullish(),
+  project: z.string().max(64).nullish(),
+  modelSize: z.string().max(32).nullish(),
   config: z.record(z.unknown()).nullish(),
 });
 

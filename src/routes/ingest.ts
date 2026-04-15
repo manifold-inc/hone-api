@@ -92,6 +92,8 @@ ingest.post("/run", async (c) => {
     netuid: data.netuid,
     uid: data.uid,
     version: data.version,
+    project: data.project,
+    modelSize: data.modelSize,
     config: data.config,
   });
 

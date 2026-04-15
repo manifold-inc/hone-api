@@ -12,19 +12,23 @@ import {
   innerSteps,
   gatherStatus,
 } from "../db/schema.js";
-import { eq, desc, and, gte, lte, sql } from "drizzle-orm";
+import { eq, desc, and, gte, lte, sql, isNotNull, max, count } from "drizzle-orm";
 
 const runs = new Hono();
 
 runs.get("/", async (c) => {
   const role = c.req.query("role");
   const hotkey = c.req.query("hotkey");
+  const project = c.req.query("project");
+  const version = c.req.query("version");
   const limit = Math.min(parseInt(c.req.query("limit") || "50"), 200);
   const offset = parseInt(c.req.query("offset") || "0");
 
   const conditions = [];
   if (role) conditions.push(eq(trainingRuns.role, role as "validator" | "miner"));
   if (hotkey) conditions.push(eq(trainingRuns.hotkey, hotkey));
+  if (project) conditions.push(eq(trainingRuns.project, project));
+  if (version) conditions.push(eq(trainingRuns.version, version));
 
   const where = conditions.length > 0 ? and(...conditions) : undefined;
 
@@ -43,6 +47,23 @@ runs.get("/", async (c) => {
   ]);
 
   return c.json({ runs: rows, total: countResult[0].count });
+});
+
+runs.get("/projects", async (c) => {
+  const rows = await db
+    .select({
+      project: trainingRuns.project,
+      version: trainingRuns.version,
+      modelSize: trainingRuns.modelSize,
+      lastSeen: max(trainingRuns.lastSeenAt),
+      runCount: count(),
+    })
+    .from(trainingRuns)
+    .where(isNotNull(trainingRuns.project))
+    .groupBy(trainingRuns.project, trainingRuns.version, trainingRuns.modelSize)
+    .orderBy(trainingRuns.project, desc(trainingRuns.version));
+
+  return c.json({ projects: rows });
 });
 
 async function resolveId(idOrExternal: string): Promise<number | null> {
