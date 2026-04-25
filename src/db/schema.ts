@@ -305,3 +305,37 @@ export const gatherStatus = mysqlTable(
     index("idx_gs_run_uid").on(table.runId, table.uid),
   ]
 );
+
+// One row per (version, window, task, metricName) -- e.g. for
+// hellaswag we'll get an "acc" row and an "acc_norm" row per evaluated
+// checkpoint window. The dashboard groups by task + metric for charts.
+export const evalResults = mysqlTable(
+  "eval_results",
+  {
+    id: bigint("id", { mode: "number" }).primaryKey().autoincrement(),
+    version: varchar("version", { length: 64 }).notNull(),
+    project: varchar("project", { length: 128 }).notNull(),
+    window: int("window").notNull(),
+    globalStep: int("global_step"),
+    task: varchar("task", { length: 64 }).notNull(),
+    metricName: varchar("metric_name", { length: 64 }).notNull(),
+    score: float("score").notNull(),
+    numFewshot: int("num_fewshot").default(0),
+    nSamples: int("n_samples"),
+    evalDurationS: float("eval_duration_s"),
+    startedAt: timestamp("started_at"),
+    completedAt: timestamp("completed_at"),
+    createdAt: timestamp("created_at").defaultNow().notNull(),
+  },
+  (table) => [
+    uniqueIndex("idx_eval_unique").on(
+      table.version,
+      table.window,
+      table.task,
+      table.metricName,
+    ),
+    index("idx_eval_version_created").on(table.version, table.createdAt),
+    index("idx_eval_task_created").on(table.task, table.createdAt),
+    index("idx_eval_version_window").on(table.version, table.window),
+  ]
+);

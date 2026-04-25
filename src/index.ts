@@ -6,6 +6,7 @@ import { logger } from "hono/logger";
 import { ingest } from "./routes/ingest.js";
 import { runs } from "./routes/runs.js";
 import { stats } from "./routes/stats.js";
+import { evalIngest, evalRead } from "./routes/eval.js";
 import { handleIngest } from "./ws/ingest.js";
 import { handleDashboard } from "./ws/dashboard.js";
 import { startRetentionJob } from "./lib/retention.js";
@@ -25,9 +26,16 @@ app.use(
 );
 
 app.route("/ingest", ingest);
+// Eval ingest is mounted separately so it bypasses /ingest/*'s
+// hotkey-auth (the evaluator authenticates with API_KEY, not a wallet
+// signature -- only the operator's evaluator should be allowed to
+// publish benchmark scores). evalApiKeyAuth is applied inside
+// ./routes/eval.ts.
+app.route("/ingest/eval", evalIngest);
 app.use("/api/*", apiKeyAuth);
 app.route("/api/runs", runs);
 app.route("/api/stats", stats);
+app.route("/api/eval", evalRead);
 
 app.get("/health", (c) => c.json({ status: "ok" }));
 

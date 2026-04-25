@@ -102,3 +102,23 @@ export const apiKeyAuth = createMiddleware(async (c, next) => {
 
   await next();
 });
+
+// Strict variant for /ingest/eval. Unlike apiKeyAuth, this REJECTS when
+// API_KEY is unset (the eval-ingest route writes data, so an open mode
+// would let any caller pollute the eval_results table). Same key, just
+// stricter policy. Use API_KEY in the env on the validator/evaluator
+// box to authorise the evaluator's POSTs.
+export const evalApiKeyAuth = createMiddleware(async (c, next) => {
+  const apiKey = process.env.API_KEY;
+  if (!apiKey) {
+    return c.json(
+      { error: "API_KEY not configured on server; eval ingest disabled" },
+      503,
+    );
+  }
+  const provided = c.req.header("x-api-key");
+  if (provided !== apiKey) {
+    return c.json({ error: "Unauthorized" }, 401);
+  }
+  await next();
+});

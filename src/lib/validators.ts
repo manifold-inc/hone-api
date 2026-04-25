@@ -181,3 +181,31 @@ export const innerStepSchema = z.object({
   innerLr: lrField(),
   gradNorm: normField(),
 });
+
+// One per-task per-metric row inside an eval ingest payload. Score is
+// allowed to be 0..1 (accuracy / acc_norm), with a generous upper bound
+// in case a future metric (e.g. F1) extends past 1.
+const evalResultRowSchema = z.object({
+  task: z.string().min(1).max(64),
+  metricName: z.string().min(1).max(64),
+  score: z.number().finite().min(-1).max(1000),
+  numFewshot: finiteNumber().int().min(0).default(0),
+  nSamples: finiteNumber().int().min(0).nullish(),
+  evalDurationS: finiteNumber().min(0).nullish(),
+});
+
+// Wire payload posted by hone/neurons/evaluator.py to /ingest/eval.
+// One window of evaluation produces N task/metric rows; the bundle
+// also carries summary timing so we can show "last eval N minutes ago"
+// indicators on the dashboard.
+export const evalIngestSchema = z.object({
+  version: z.string().min(1).max(64),
+  project: z.string().min(1).max(128),
+  window: finiteNumber().int().min(0),
+  globalStep: finiteNumber().int().nullish(),
+  startedAt: z.string().datetime().nullish(),
+  completedAt: z.string().datetime().nullish(),
+  results: z.array(evalResultRowSchema).min(1).max(256),
+});
+
+export type EvalIngestPayload = z.infer<typeof evalIngestSchema>;
