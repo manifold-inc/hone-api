@@ -91,7 +91,16 @@ export function getLivenessSnapshot(): LivenessEntry[] {
   return entries;
 }
 
-const HEARTBEAT_TIMEOUT_MS = 30_000;
+// Heartbeat timeout. The Python reporter sends every 15s, but the
+// asyncio loop on the miner is shared with the training thread --
+// during a 12-second CUDA-bound inner step the event loop barely
+// runs, so the heartbeat task can be late. With the previous 30s
+// threshold (only 2x the heartbeat interval) the server was killing
+// the WS during normal training and the client got stuck retrying
+// (and eventually permanently disabled, see DashboardReporter
+// _ws_max_failures). Bump to 120s -- 8x heartbeat interval -- so
+// even multi-step asyncio pauses don't trigger a disconnect.
+const HEARTBEAT_TIMEOUT_MS = 120_000;
 
 setInterval(() => {
   const now = Date.now();
