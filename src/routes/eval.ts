@@ -114,20 +114,26 @@ evalRead.get("/latest", async (c) => {
     return c.json({ error: "version query param required" }, 400);
   }
 
-  // PlanetScale supports window functions; we pick the row with the
-  // largest window per task and filter on metric. This is a single
-  // round-trip and avoids per-task fan-out queries.
+  // PlanetScale / MySQL 8 reserves ``window`` as a keyword (window
+  // functions). We *must* backtick it everywhere it appears as a
+  // column reference -- otherwise the parser sees it mid-expression
+  // and dies with "syntax error near 'window'". Same goes for any
+  // future column we name after a reserved word.
+  //
+  // Pick the row with the largest window per task in a single
+  // round-trip so the dashboard's per-task tiles fan out from one
+  // query.
   const rows = await db.execute(sql`
-    SELECT er.task, er.score, er.window, er.global_step AS globalStep,
+    SELECT er.task, er.score, er.\`window\`, er.global_step AS globalStep,
            er.metric_name AS metricName, er.created_at AS createdAt,
            er.eval_duration_s AS evalDurationS, er.n_samples AS nSamples
     FROM eval_results er
     INNER JOIN (
-      SELECT task, MAX(window) AS max_window
+      SELECT task, MAX(\`window\`) AS max_window
       FROM eval_results
       WHERE version = ${version} AND metric_name = ${metric}
       GROUP BY task
-    ) m ON m.task = er.task AND m.max_window = er.window
+    ) m ON m.task = er.task AND m.max_window = er.\`window\`
     WHERE er.version = ${version} AND er.metric_name = ${metric}
     ORDER BY er.task ASC
   `);
