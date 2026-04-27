@@ -25,13 +25,23 @@ app.use(
   })
 );
 
-app.route("/ingest", ingest);
 // Eval ingest is mounted separately so it bypasses /ingest/*'s
 // hotkey-auth (the evaluator authenticates with API_KEY, not a wallet
 // signature -- only the operator's evaluator should be allowed to
 // publish benchmark scores). evalApiKeyAuth is applied inside
 // ./routes/eval.ts.
+//
+// IMPORTANT: this MUST be registered BEFORE ``app.route("/ingest", ingest)``.
+// Hono's routing priority is registration order, and the broader
+// ``/ingest`` mount installs ``hotkeyAuth`` on ``/*`` -- including
+// ``/eval`` -- which is what made every evaluator POST come back as
+// 401 ``Missing authentication headers (x-hotkey, x-nonce, x-signature)``
+// before this fix. With the more specific mount registered first, Hono
+// dispatches ``/ingest/eval`` to ``evalIngest`` (and its
+// ``evalApiKeyAuth`` middleware) before the generic ``ingest`` chain
+// has a chance to run.
 app.route("/ingest/eval", evalIngest);
+app.route("/ingest", ingest);
 app.use("/api/*", apiKeyAuth);
 app.route("/api/runs", runs);
 app.route("/api/stats", stats);
