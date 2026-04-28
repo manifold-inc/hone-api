@@ -171,6 +171,37 @@ evalRead.get("/latest", async (c) => {
   return c.json({ latest });
 });
 
+// GET /api/eval/versions
+// Returns the distinct list of versions that have ever published eval
+// results, ordered newest-first by the most recent createdAt seen for
+// each version. The dashboard uses this to pick a sensible
+// "effectiveEvalVersion" when the selected training-run version
+// (driven by training_runs registrations from the miner/validator)
+// has not yet had any eval rows -- typical immediately after a fresh
+// version bump on the miner box, while the eval is still mid-run on
+// the previous version. Without this fallback the entire benchmark
+// section blanks out during deploy windows.
+evalRead.get("/versions", async (c) => {
+  const rows = await db.execute(sql`
+    SELECT version, MAX(created_at) AS lastSeen, COUNT(*) AS rowCount
+    FROM eval_results
+    GROUP BY version
+    ORDER BY MAX(created_at) DESC
+  `);
+  const rawRows: any[] =
+    Array.isArray((rows as any).rows)
+      ? (rows as any).rows
+      : Array.isArray(rows)
+      ? (rows as any)
+      : [];
+  const versions = rawRows.map((r) => ({
+    version: String(r.version),
+    lastSeen: String(r.lastSeen),
+    rowCount: Number(r.rowCount),
+  }));
+  return c.json({ versions });
+});
+
 // GET /api/eval/tasks?version=X
 // Returns the distinct list of task names that have ever been
 // evaluated for the version. Lets the dashboard render a card per
