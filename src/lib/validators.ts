@@ -76,6 +76,29 @@ const windowMetricsSchema = z.object({
   timingGather: finiteNullish(),
   timingEvaluation: finiteNullish(),
   timingModelUpdate: finiteNullish(),
+  timingOuterStepDecode: finiteNullish(),
+  timingOuterStepMerge: finiteNullish(),
+  timingOuterStepApply: finiteNullish(),
+  // P3 adaptive-gather + P4 parallel-outer telemetry. All three are
+  // optional floats so historical rows continue to validate; the
+  // Python `DashboardReporter.report_window` contract guarantees
+  // non-negative seconds when present, but we don't enforce a lower
+  // bound here to stay in lockstep with the rest of the timing fields.
+  timingGatherQuorumSeconds: finiteNullish(),
+  timingGatherGraceSeconds: finiteNullish(),
+  timingOuterStepOverlapSavedSeconds: finiteNullish(),
+  timingPeerEvalSecondsPerUidP50: finiteNullish(),
+  timingPeerEvalSecondsPerUidP95: finiteNullish(),
+  timingPeerEvalSecondsPerUidMax: finiteNullish(),
+  uploadBytesPerFragmentP50: finiteNumber().int().min(0).nullish(),
+  uploadBytesPerFragmentMax: finiteNumber().int().min(0).nullish(),
+  outerStepsPerChainWindow: finiteNullish(),
+  effectiveTokensPerSecond: finiteNullish(),
+  // P3b: chain-window length in blocks at the moment this row was
+  // produced. Bounded [1, 1024]: 1 block is the chain floor (~12s);
+  // 1024 is wider than any operator-set value we'd ever see and acts
+  // as a sanity guard against typos.
+  blocksPerWindow: finiteNumber().int().min(1).max(1024).nullish(),
   evaluatedUids: finiteNumber().int().min(0).nullish(),
   totalNegativeEvals: finiteNumber().int().min(0).nullish(),
   totalExcluded: finiteNumber().int().min(0).nullish(),

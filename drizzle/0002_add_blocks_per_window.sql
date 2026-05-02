@@ -1,0 +1,1 @@
+ALTER TABLE `window_metrics` ADD `blocks_per_window` int;

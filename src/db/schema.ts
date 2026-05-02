@@ -81,6 +81,40 @@ export const windowMetrics = mysqlTable(
     timingEvaluation: float("timing_evaluation"),
     timingModelUpdate: float("timing_model_update"),
 
+    timingOuterStepDecode: float("timing_outer_step_decode"),
+    timingOuterStepMerge: float("timing_outer_step_merge"),
+    timingOuterStepApply: float("timing_outer_step_apply"),
+
+    // P3 adaptive-gather telemetry: how long the validator waited for
+    // the K_quorum-th peer to land (`quorum_seconds`) and how much
+    // additional grace it spent collecting late arrivers
+    // (`grace_seconds`). Together they bound the gather phase and
+    // explain why outer steps fire faster once quorum is hit.
+    timingGatherQuorumSeconds: float("timing_gather_quorum_seconds"),
+    timingGatherGraceSeconds: float("timing_gather_grace_seconds"),
+    // P4 parallel outer step: wall-clock saved by overlapping the
+    // outer_step apply with the next window's evaluation. Computed
+    // validator-side as `serial_estimate - measured_total`.
+    timingOuterStepOverlapSavedSeconds: float("timing_outer_step_overlap_saved_seconds"),
+
+    timingPeerEvalSecondsPerUidP50: float("timing_peer_eval_seconds_per_uid_p50"),
+    timingPeerEvalSecondsPerUidP95: float("timing_peer_eval_seconds_per_uid_p95"),
+    timingPeerEvalSecondsPerUidMax: float("timing_peer_eval_seconds_per_uid_max"),
+
+    uploadBytesPerFragmentP50: bigint("upload_bytes_per_fragment_p50", { mode: "number" }),
+    uploadBytesPerFragmentMax: bigint("upload_bytes_per_fragment_max", { mode: "number" }),
+
+    outerStepsPerChainWindow: float("outer_steps_per_chain_window"),
+    effectiveTokensPerSecond: float("effective_tokens_per_second"),
+
+    // P3b: operator-tunable chain-window length (`hparams.blocks_per_window`)
+    // mirrored into telemetry so the dashboard can decide whether the
+    // outer-steps-per-window tile crosses the step-down-eligible threshold.
+    // Validator passes ``self.hparams.blocks_per_window`` verbatim each
+    // window; ``int`` because chain blocks are integral and the
+    // step-down sequence (30 → 15 → 10 → 6) never goes fractional.
+    blocksPerWindow: int("blocks_per_window"),
+
     evaluatedUids: int("evaluated_uids"),
     totalNegativeEvals: int("total_negative_evals"),
     totalExcluded: int("total_excluded"),

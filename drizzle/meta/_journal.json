@@ -1,0 +1,34 @@
+{
+  "version": "7",
+  "dialect": "mysql",
+  "entries": [
+    {
+      "idx": 0,
+      "version": "5",
+      "when": 1777690375035,
+      "tag": "0000_yellow_doctor_spectrum",
+      "breakpoints": true
+    },
+    {
+      "idx": 1,
+      "version": "5",
+      "when": 1777690379471,
+      "tag": "0001_solid_eddie_brock",
+      "breakpoints": true
+    },
+    {
+      "idx": 2,
+      "version": "5",
+      "when": 1777697269585,
+      "tag": "0002_add_blocks_per_window",
+      "breakpoints": true
+    },
+    {
+      "idx": 3,
+      "version": "5",
+      "when": 1777751992976,
+      "tag": "0003_add_p3_p4_timing_columns",
+      "breakpoints": true
+    }
+  ]
+}
